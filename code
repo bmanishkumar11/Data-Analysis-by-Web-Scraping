@@ -1,0 +1,251 @@
+url.py:
+urlpatterns = [
+    path('admin1/', admin.site.urls),
+    path('index/',user.index,name='index'),
+    path('admn1/', admins.adminlogin, name='admn1'),
+    path('userdetails/', admins.userdetails, name='userdetails'),
+    path('adminloginentered/', admins.adminloginentered, name='adminloginentered'),
+    path('activateuser/', admins.activateuser, name='activateuser'),
+    path('storecsvdata/',admins.storecsvdata1,name='storecsvdata'),
+    path('scrapping/',admins.scrapping,name='scrapping'),
+    path('logout/', admins.logout, name='logout'),
+
+
+    path('user/',user.userlogin,name='user'),
+    path('userpage/',user.userpage,name='userpage'),
+    path('userregister/',user.userregister,name='userregister'),
+    path('userlogincheck/',user.userlogincheck,name='userlogincheck'),
+    path('search/',user.search,name='search'),
+    path('searchresult/',user.searchresult,name='searchresult'),
+    path('wbscrapp/',user.wbscrapp,name='wbscrapp'),
+views.py:
+from builtins import next
+
+from django.shortcuts import render
+from django.http import HttpResponse
+from user.models import *
+from admin1.models import *
+from django.contrib import messages
+import csv
+import io
+from io import TextIOWrapper
+
+
+from requests import get
+from requests.exceptions import RequestException
+from bs4 import BeautifulSoup
+def adminlogin(request):
+    print("hello gudmng")
+    return render(request, "admin1/adminlogin.html")
+
+def logout(request):
+    return render(request, "index.html")
+
+def adminloginentered(request):
+    if request.method == 'POST':
+        uname=request.POST['uname']
+        passwd=request.POST['upasswd']
+        if uname == 'admin' and  passwd == 'admin':
+            return render(request,"admin1/adminloginentered.html")
+        else:
+            return HttpResponse("invalied credentials")
+    return render(request, "admin1/adminloginentered.html")
+
+def activateuser(request):
+    if request.method =='GET':
+        uname=request.GET.get('pid')
+        print(uname)
+        status='Activated'
+        print("pid=",uname,"status=",status)
+        usermodel.objects.filter(id=uname).update(status=status)
+        qs=usermodel.objects.all()
+        return render(request,"admin1/userdetails.html",{"qs":qs})
+
+
+def userdetails(request):
+    qs=usermodel.objects.all()
+    return render(request,'admin1/userdetails.html',{"qs":qs})
+
+def storecsvdata(request):
+    if request.method == 'POST':
+        # if request.method == "GET":
+        # return render(request, template, prompt)
+        csv_file = request.FILES['file']
+        # let's check if it is a csv file
+        if not csv_file.name.endswith('.csv'):
+            messages.error(request, 'THIS IS NOT A CSV FILE')
+        data_set = csv_file.read().decode('UTF-8')
+
+        # setup a stream which is when we loop through each line we are able to handle a data in a stream
+        io_string = io.StringIO(data_set)
+        next(io_string)
+        for column in csv.reader(io_string, delimiter=',', quotechar="|"):
+            _, created = csvdatamodel.objects.update_or_create(
+                name=column[0],
+                rating=column[1],
+                reviews=column[2],
+                type=column[3],
+                hq=column[4],
+                employees=column[5],
+
+
+            )
+        context = {}
+
+        '''
+        name = request.POST.get('name')
+        csvfile = TextIOWrapper(request.FILES['file'])
+        # columns = defaultdict(list)
+        storecsvdata=csv.DictReader(csvfile)
+
+        for row1 in storecsvdata:
+            Date = row1["Date"]
+            Day = row1["Day"]
+            CodedDay = row1["CodedDay"]
+            Zone = row1["Zone"]
+            Weather = row1["Weather"]
+            Temperature = row1["Temperature"]
+            Traffic = row1["Traffic"]
+
+
+            storetrafficdata.objects.create(Date=Date, Day=Day, CodedDay=CodedDay,
+                                          Zone=Zone, Weather=Weather, Temperature=Temperature,
+                                          Traffic=Traffic)
+
+        print("Name is ", csvfile)
+        return HttpResponse('CSV file successful uploaded')
+    else:
+'''
+    return render(request, 'admin1/storecsvdata.html', {})
+
+
+def storecsvdata1(request):
+    if request.method == 'POST':
+        # name = request.POST.get('name')
+        csvfile = TextIOWrapper(request.FILES['file'])
+        # columns = defaultdict(list)
+        storecsvdata = csv.DictReader(csvfile)
+
+        for row1 in storecsvdata:
+            name = row1["name"]
+            rating = row1["rating"]
+            reviews = row1["reviews"]
+            type = row1["type"]
+            hq = row1["hq"]
+            employees = row1["employees"]
+
+            csvdatamodel.objects.create(name=name, rating=rating, reviews=reviews,
+                                             type=type, hq=hq, employees=employees)
+
+        print("Name is ", csvfile)
+        return HttpResponse('CSV file successful uploaded')
+
+
+    else:
+        return render(request, 'admin1/storecsvdata.html', {})
+   
+
+
+
+def scrapping(request):
+    qs=csvdatamodel.objects.all()
+    return render(request,'admin1/scrappindetails.html',{"qs":qs})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+models.py:
+
+from django.db import models
+
+class usermodel(models.Model):
+    name = models.CharField(max_length=50)
+    email = models.EmailField()
+    passwd = models.CharField(max_length=40)
+    cwpasswd = models.CharField(max_length=40)
+    mobileno = models.CharField(max_length=50, default="", editable=True)
+    status = models.CharField(max_length=40, default="", editable=True)
+
+    def  __str__(self):
+        return self.email
+
+    class Meta:
+        db_table='userregister'
+
+
+
+forms.py:
+from django.core import validators
+from django import forms
+from user.models import *
+
+class userForm(forms.ModelForm):
+    name = forms.CharField(widget=forms.TextInput(), required=True, max_length=100,)
+    passwd = forms.CharField(widget=forms.PasswordInput(), required=True, max_length=100)
+    cwpasswd = forms.CharField(widget=forms.PasswordInput(), required=True, max_length=100)
+    email = forms.CharField(widget=forms.TextInput(),required=True)
+    mobileno= forms.CharField(widget=forms.TextInput(), required=True, max_length=10,validators=[validators.MaxLengthValidator(10),validators.MinLengthValidator(10)])
+    status = forms.CharField(widget=forms.HiddenInput(), initial='waiting', max_length=100)
+
+    def __str__(self):
+        return self.email
+
+   
+ class Meta:
+        model=usermodel
+        fields=['name','passwd','cwpasswd','email','mobileno','status']
+
+userlogin.html:
+
+{%extends 'base.html'%}
+{%load static%}
+
+
+{%block contents%}
+
+<div class="wrapper col2">
+  <div id="featured_slide">
+    <div class="featured_box">
+        <h2>USER Login Form</h2>
+        <p>
+            <form action="/userlogincheck/" method="POST">
+                                 {% csrf_token %}
+                                <table><tr><td style="color:blue">
+                                <input  type="text" name="sname" placeholder="user email" ><br/><br/>
+<!--                                    <input type="email" name="email" class="form-control"  placeholder="Email">-->
+                                 <input  type="password" name="spasswd" placeholder="Password" ><br/><br/>
+                                    </td></tr></table> <input type="submit" style="color:#FF4500" value="submit"><br/>
+                                <br><br>New Customer Register Here ?<a href="{% url 'userregister' %}" style="color:blue">Click Here</a>
+                            </form> </h3>
+                            {% if messages %}
+                                {% for message in messages %}
+                                    <font color='darkred'> {{ message }}</font>
+                                {% endfor %}
+                            {% endif %}
+        </p>
+      <div class="floater">
+
+      </div>
+    </div>
+
+  </div>
+</div>
+{%endblock%}
+
+
+
+
+
