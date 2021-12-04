@@ -9,8 +9,6 @@ urlpatterns = [
     path('storecsvdata/',admins.storecsvdata1,name='storecsvdata'),
     path('scrapping/',admins.scrapping,name='scrapping'),
     path('logout/', admins.logout, name='logout'),
-
-
     path('user/',user.userlogin,name='user'),
     path('userpage/',user.userpage,name='userpage'),
     path('userregister/',user.userregister,name='userregister'),
@@ -29,18 +27,14 @@ from django.contrib import messages
 import csv
 import io
 from io import TextIOWrapper
-
-
 from requests import get
 from requests.exceptions import RequestException
 from bs4 import BeautifulSoup
 def adminlogin(request):
     print("hello gudmng")
     return render(request, "admin1/adminlogin.html")
-
 def logout(request):
     return render(request, "index.html")
-
 def adminloginentered(request):
     if request.method == 'POST':
         uname=request.POST['uname']
@@ -50,7 +44,6 @@ def adminloginentered(request):
         else:
             return HttpResponse("invalied credentials")
     return render(request, "admin1/adminloginentered.html")
-
 def activateuser(request):
     if request.method =='GET':
         uname=request.GET.get('pid')
@@ -87,8 +80,6 @@ def storecsvdata(request):
                 type=column[3],
                 hq=column[4],
                 employees=column[5],
-
-
             )
         context = {}
 
@@ -150,23 +141,7 @@ def storecsvdata1(request):
 def scrapping(request):
     qs=csvdatamodel.objects.all()
     return render(request,'admin1/scrappindetails.html',{"qs":qs})
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    
 models.py:
 
 from django.db import models
